@@ -5,12 +5,111 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Intent;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 public class MyAccessibilityService extends AccessibilityService {
+    private String TAG = "TESTING";
+
+    private AccessibilityNodeInfo getListItemNodeInfo(AccessibilityNodeInfo source) {
+        AccessibilityNodeInfo current = source;
+
+        Log.d(TAG, "CURRENT");
+        Log.d(TAG, source.toString());
+        CharSequence text = source.getText();
+
+        if (text != null) {
+            Log.d(TAG, source.getText().toString());
+
+            if (source.getText().toString().equals("CREATE NEW FACEBOOK ACCOUNT")) {
+                Log.d(TAG, Boolean.toString(current.isClickable()) + " Clickcable");
+                Log.d(TAG, "CLICKING NOW..................");
+                boolean action = source.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                Log.d(TAG, Boolean.toString(action));
+            }
+        }
+        while (true) {
+            AccessibilityNodeInfo parent = current.getParent();
+            if (parent == null) {
+                Log.d(TAG, "parent is null");
+                return null;
+            }
+
+            Log.d(TAG, parent.toString());
+            CharSequence className = parent.getClassName();
+            if (className != null) {
+                Log.d(TAG, className.toString());
+            }
+
+
+            // if (TASK_LIST_VIEW_CLASS_NAME.equals(parent.getClassName())) {
+            //     return current;
+            //}
+
+            // NOTE: Recycle the infos.
+            AccessibilityNodeInfo oldCurrent = current;
+            current = parent;
+            oldCurrent.recycle();
+        }
+    }
+
+    private void printChildren(AccessibilityNodeInfo source, int depth) {
+        if (source == null) {
+            return;
+        }
+
+        for (int i = 0; i < source.getChildCount(); i++) {
+            AccessibilityNodeInfo child = source.getChild(i);
+
+            if (child != null) {
+                CharSequence text = child.getText();
+                CharSequence className = child.getClassName();
+
+                if (text == null) {
+                    text = "";
+                }
+
+                if (className == null) {
+                    className = "";
+                }
+
+                Log.d(TAG, className.toString() + " " + text.toString() + " " +
+                        child.isClickable() + " " + depth);
+                Log.d(TAG, child.toString());
+
+                recursivelyPrintChildren(child, depth + 1);
+            }
+        }
+    }
+
+    private void recursivelyPrintChildren(AccessibilityNodeInfo source, int depth) {
+        if (depth > 3) {
+            return;
+        }
+
+        printChildren(source, depth);
+    }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        Log.d("TESTING", Integer.toString(event.getEventType()));
+        Log.d(TAG, Integer.toString(event.getEventType()));
+
+        CharSequence description = event.getContentDescription();
+        if (description != null) {
+            Log.d(TAG, event.getContentDescription().toString());
+        }
+
+        AccessibilityNodeInfo source = event.getSource();
+
+        if (source == null) {
+            Log.d(TAG, "source is null");
+            return;
+        }
+        Log.d(TAG, "SOURCE");
+        Log.d(TAG, source.getClassName().toString());
+
+        recursivelyPrintChildren(source, 0);
+
+        //getListItemNodeInfo(source);
     }
 
     @Override
@@ -21,36 +120,21 @@ public class MyAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        AccessibilityServiceInfo info = new AccessibilityServiceInfo();
-        // Set the type of events that this service wants to listen to.  Others
-        // won't be passed to this service.
-        info.eventTypes = AccessibilityEvent.TYPES_ALL_MASK;
 
-        // If you only want this service to work with specific applications, set their
-        // package names here.  Otherwise, when the service is activated, it will listen
-        // to events from all applications.
+        Log.d(TAG, this.getServiceInfo().toString());
 
-        // Set the type of feedback your service will provide.
-        //info.feedbackType = AccessibilityServiceInfo.FEEDBACK_SPOKEN;
-
-        // Default services are invoked only if no package-specific ones are present
-        // for the type of AccessibilityEvent generated.  This service *is*
-        // application-specific, so the flag isn't necessary.  If this was a
-        // general-purpose service, it would be worth considering setting the
-        // DEFAULT flag.
-
-        info.flags = AccessibilityServiceInfo.DEFAULT;
-
-        info.notificationTimeout = 100;
-
-        this.setServiceInfo(info);
-
-        Log.d("TESTING", "SERVICE CONNECTED");
+        Log.d(TAG, "SERVICE CONNECTED");
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.d("TESTING", "UNBIND");
+        Log.d(TAG, "UNBIND");
         return super.onUnbind(intent);
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "DESTROYED");
+        super.onDestroy();
     }
 }
